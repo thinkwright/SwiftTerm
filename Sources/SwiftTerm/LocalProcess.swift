@@ -369,14 +369,15 @@ public class LocalProcess {
 
         if let (shellPid, childfd) = PseudoTerminalHelpers.fork(andExec: executable, args: shellArgs, env: env, currentDirectory: currentDirectory, desiredWindowSize: &size) {
 #if os(macOS)
-            childMonitor = DispatchSource.makeProcessSource(identifier: shellPid, eventMask: .exit, queue: dispatchQueue)
-            if let cm = childMonitor {
-                if #available(macOS 10.12, *) {
-                    cm.activate()
-                } else {
-                    // Fallback on earlier versions
-                }
-                cm.setEventHandler(handler: { [weak self] in self?.processTerminated () })
+            // Use waitpid on a background thread instead of
+            // DispatchSource.makeProcessSource, which calls abort()
+            // when dispatch_source_create returns NULL (observed on
+            // macOS 15.3+ and corporate-managed systems).
+            let pidToWatch = shellPid
+            DispatchQueue.global(qos: .utility).async { [weak self] in
+                var status: Int32 = 0
+                waitpid(pidToWatch, &status, 0)
+                self?.processTerminated()
             }
 #endif
             running = true

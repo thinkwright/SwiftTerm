@@ -565,17 +565,17 @@ open class TerminalView: NSView, NSTextInputClient, NSUserInterfaceValidations, 
         if response {
             hasFocus = true
             caretView.updateCursorStyle()
-            terminal.setTerminalFocus(true)
+            // Focus reporting (DEC 1004) disabled — CLI TUIs like Claude's
+            // Ink framework mishandle CSI I/O, jumping the cursor to (0,0).
         }
         return response
     }
-    
+
     public override func resignFirstResponder() -> Bool {
         let response = super.resignFirstResponder()
         if response {
             caretView.disableAnimations()
             hasFocus = false
-            terminal.setTerminalFocus(false)
         }
         return response
     }

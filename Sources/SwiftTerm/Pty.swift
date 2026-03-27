@@ -85,6 +85,9 @@ public class PseudoTerminalHelpers {
                     let _ = execve(andExec, pargs, penv)
                 })
             })
+            // execve only returns on failure — terminate the child immediately
+            // so it doesn't fall through and run the parent's code.
+            _exit(1)
         }
         return (pid, master)
     }
